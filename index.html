@@ -113,7 +113,7 @@ if(ringForm){
     try{
       // Uses the public.pigeon_race_records table created by the setup SQL.
       const {data,error}=await srpcClient.from('pigeon_race_records')
-        .select('ring_number,position,loft_name,club_tag,race_area,race_date,distance,velocity')
+        .select('ring_number,position,loft_name,club_tag,race_area,race_date,distance,velocity,total_pigeons')
         .eq('ring_number',ring).order('race_date',{ascending:false});
       if(error){
         msg.textContent='';
@@ -123,35 +123,21 @@ if(ringForm){
       if(!data || data.length===0){msg.textContent='';out.innerHTML='<div class="ring-empty">No race records found for ring number <strong>'+escapeRingHtml(ring)+'</strong>. Check the number or try again after records are added.</div>';return;}
       msg.textContent='';
       const first=data[0];
-      // Race totals are the number of pigeons entered in that race, not the number
-      // of result rows currently stored in Supabase. These totals are kept separate
-      // for each race and positions in the database are never modified.
-      let allRaceRows=[]; let countError=null; let start=0; const pageSize=1000;
-      while(true){
-        const page=await srpcClient.from('pigeon_race_records')
-          .select('race_area,race_date,distance,club_tag')
-          .range(start,start+pageSize-1);
-        if(page.error){countError=page.error;break;}
-        const rows=page.data||[]; allRaceRows.push(...rows);
-        if(rows.length<pageSize) break;
-        start+=pageSize;
-      }
-      // Count every stored pigeon entry for the same race. Do not group by
-      // club_tag or distance: those fields can vary/mistype between rows.
+      // Use the official race entrant total stored in total_pigeons.
+      // Fallbacks cover the three known races if the field is temporarily null.
       const normArea=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
       const normDate=v=>String(v||'').trim().slice(0,10);
-      const normDistance=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
-      const raceKey=r=>[normArea(r.race_area),normDate(r.race_date)].join('|');
-      const raceCounts=new Map();
-      if(!countError && allRaceRows){
-        for(const row of allRaceRows){
-          const key=raceKey(row);
-          raceCounts.set(key,(raceCounts.get(key)||0)+1);
-        }
-      }
+      const officialTotal=r=>{
+        if(Number(r.total_pigeons)>0) return Number(r.total_pigeons);
+        const area=normArea(r.race_area), date=normDate(r.race_date);
+        if(date==='2024-12-07' && area.includes('bogura')) return 196;
+        if(date==='2024-11-30' && area.includes('jamuna')) return 173;
+        if(date==='2024-12-24' && area.includes('domar')) return 128;
+        return null;
+      };
       let html='<div class="ring-summary"><div class="ring-stat"><small>Ring Number</small><strong>'+escapeRingHtml(first.ring_number)+'</strong></div><div class="ring-stat"><small>Total Races</small><strong>'+data.length+'</strong></div></div>';
       html+='<table class="ring-table"><thead><tr><th>Position</th><th>Loft</th><th>Club Tag</th><th>Race Area</th><th>Date (D-M-Y)</th><th>Distance</th><th>Velocity</th></tr></thead><tbody>';
-      for(const r of data){const d=r.race_date?new Date(r.race_date+'T00:00:00Z').toLocaleDateString('en-GB',{timeZone:'UTC'}):'—';const total=raceCounts.get(raceKey(r));const pos=r.position??'—';const positionLabel=(total && pos!=='—')?String(pos)+'/'+total:String(pos);html+='<tr><td><strong>'+escapeRingHtml(positionLabel)+'</strong></td><td>'+escapeRingHtml(r.loft_name||'—')+'</td><td>'+escapeRingHtml(r.club_tag||'SRPC')+'</td><td>'+escapeRingHtml(r.race_area||'—')+'</td><td>'+escapeRingHtml(d)+'</td><td>'+escapeRingHtml(r.distance??'—')+'</td><td>'+escapeRingHtml(r.velocity??'—')+'</td></tr>';}
+      for(const r of data){const d=r.race_date?new Date(r.race_date+'T00:00:00Z').toLocaleDateString('en-GB',{timeZone:'UTC'}):'—';const total=officialTotal(r);const pos=r.position??'—';const positionLabel=(total && pos!=='—')?String(pos)+'/'+total:(total?'—/'+total:String(pos));html+='<tr><td><strong>'+escapeRingHtml(positionLabel)+'</strong></td><td>'+escapeRingHtml(r.loft_name||'—')+'</td><td>'+escapeRingHtml(r.club_tag||'SRPC')+'</td><td>'+escapeRingHtml(r.race_area||'—')+'</td><td>'+escapeRingHtml(d)+'</td><td>'+escapeRingHtml(r.distance??'—')+'</td><td>'+escapeRingHtml(r.velocity??'—')+'</td></tr>';}
       html+='</tbody></table><p class="small-note" style="margin-top:9px">Showing 1 to '+data.length+' of '+data.length+' race record(s) for this ring number.</p>';out.innerHTML=html;
     }catch(err){msg.textContent='';out.innerHTML='<div class="ring-error">Could not complete the search. Check your internet connection and try again.</div>';}
   });
