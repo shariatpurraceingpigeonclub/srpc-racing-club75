@@ -105,7 +105,11 @@ document.getElementById('login-form').addEventListener('submit',async(e)=>{e.pre
 document.getElementById('logout-button').addEventListener('click',async()=>{const {error}=await srpcClient.auth.signOut();if(error){showMsg('login-message',error.message);return;}showMsg('login-message','Logged out successfully.',true);document.getElementById('logout-button').style.display='none';});
 </script>
 <style>
-.ring-summary{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}.ring-stat{background:#eef5fb;border:1px solid var(--line);border-radius:6px;padding:10px 13px;min-width:130px}.ring-stat small{display:block;color:#52677e;margin-bottom:4px}.ring-stat strong{font-size:20px;color:#0757a6}.ring-table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px}.ring-table th{background:#dceef7;color:#163b5c;text-align:left;padding:11px 9px}.ring-table td{padding:11px 9px;border-bottom:1px solid var(--line);vertical-align:top}.ring-table tr:nth-child(even){background:#f7fafd}.ring-error{padding:12px;background:#fff4f2;border:1px solid #f0c5bf;border-radius:5px;color:#8b2c20;line-height:1.5}.ring-empty{padding:12px;background:#f7fafd;border:1px solid var(--line);border-radius:5px;line-height:1.5}
+.ring-summary{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}.ring-stat{background:#eef5fb;border:1px solid var(--line);border-radius:6px;padding:10px 13px;min-width:130px}.ring-stat small{display:block;color:#52677e;margin-bottom:4px}.ring-stat strong{font-size:20px;color:#0757a6}.ring-table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;min-width:0}
+.ring-table th{background:#dceef7;color:#163b5c;text-align:left;padding:5px 3px;font-size:9px;overflow-wrap:anywhere;word-break:break-word}
+.ring-table td{padding:5px 3px;border-bottom:1px solid var(--line);vertical-align:top;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+#ring-search-results{width:100%;max-width:100%;overflow-x:hidden!important}
+@media(max-width:600px){.ring-table{font-size:8px}.ring-table th{font-size:7px;padding:4px 2px}.ring-table td{padding:5px 2px}.ring-stat{min-width:0;flex:1}.ring-stat strong{font-size:16px}}.ring-table tr:nth-child(even){background:#f7fafd}.ring-error{padding:12px;background:#fff4f2;border:1px solid #f0c5bf;border-radius:5px;color:#8b2c20;line-height:1.5}.ring-empty{padding:12px;background:#f7fafd;border:1px solid var(--line);border-radius:5px;line-height:1.5}
 </style>
 <script>
 const ringForm=document.getElementById('pigeon-search-form');
