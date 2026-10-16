@@ -113,19 +113,27 @@ document.getElementById('join-srpc-btn').addEventListener('click',()=>{
 });
 const showMsg=(id,msg,ok=false)=>{const el=document.getElementById(id);el.textContent=msg;el.style.color=ok?'#16823a':'#b42318';};
 document.getElementById('signup-form').addEventListener('submit',async(e)=>{
- e.preventDefault(); showMsg('signup-message','Submitting membership request…',true);
+ e.preventDefault();
+ const msg=document.getElementById('signup-message');
+ showMsg('signup-message','Submitting membership request…',true);
  const full_name=document.getElementById('signup-name').value.trim();
  const phone=document.getElementById('signup-phone').value.trim();
- const email=document.getElementById('signup-email').value.trim();
+ const email=document.getElementById('signup-email').value.trim() || null;
  const password=document.getElementById('signup-password').value;
+ if(password.length < 8){ showMsg('signup-message','Password must be at least 8 characters.'); return; }
  try {
-   let result;
-   if(email){ result=await srpcClient.auth.signUp({email,password,options:{data:{full_name,phone,membership_status:'pending'}}}); }
-   else { result=await srpcClient.auth.signUp({phone,password,options:{data:{full_name,phone,membership_status:'pending'}}}); }
-   if(result.error) throw result.error;
-   showMsg('signup-message','Request Pending — your membership request has been submitted. Please wait for the admin to review and approve or reject it.',true);
+   // Do not use Supabase phone/email Auth here: phone OTP is not required for a pending request.
+   // Never store a raw password in the membership-request table.
+   const { error } = await srpcClient.from('membership_requests').insert([{
+     full_name, phone, email, status:'pending'
+   }]);
+   if(error) throw error;
+   showMsg('signup-message','Request Pending — your membership request has been submitted successfully. The admin will review it and approve or reject it. Your password is not saved until a secure member account is created after approval.',true);
    document.getElementById('signup-form').reset();
- } catch(err) { showMsg('signup-message',err.message||'Could not submit the request. Please check the details and try again.'); }
+ } catch(err) {
+   console.error('Membership request submission failed:',err);
+   showMsg('signup-message','Could not submit the request. Please make sure the membership_requests table and its insert policy are set up in Supabase, then try again.');
+ }
 });
 document.getElementById('login-form').addEventListener('submit',async(e)=>{e.preventDefault();showMsg('login-message','Signing in…',true);try{const {data,error}=await srpcClient.auth.signInWithPassword({email:document.getElementById('login-email').value.trim(),password:document.getElementById('login-password').value});if(error)throw error;showMsg('login-message','Logged in successfully as '+(data.user.email||'member')+'. Member-only features are still being connected.',true);document.getElementById('logout-button').style.display='inline-block';}catch(err){showMsg('login-message',err.message||'Login failed. Please check your email and password.');}});
 document.getElementById('logout-button').addEventListener('click',async()=>{const {error}=await srpcClient.auth.signOut();if(error){showMsg('login-message',error.message);return;}showMsg('login-message','Logged out successfully.',true);document.getElementById('logout-button').style.display='none';});
