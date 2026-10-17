@@ -152,7 +152,46 @@ async function loadAdminRequests(){
  if(error){box.textContent='Could not load requests: '+error.message;return;}
  if(!data?.length){box.textContent='No membership requests found.';return;}
  box.innerHTML=data.map(r=>`<div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin:10px 0;background:#fff"><strong>${escAdmin(r.full_name||'Unnamed')}</strong><p style="margin:6px 0">Phone: ${escAdmin(r.phone||r.phone_number||'—')}<br>Email: ${escAdmin(r.email||'—')}<br>Status: <b>${escAdmin(r.status||'pending')}</b><br><small>${escAdmin(r.created_at||'')}</small></p>${String(r.status||'pending').toLowerCase()==='pending'?`<button type="button" data-request-id="${escAdmin(r.id)}" data-status="approved">Approve</button> <button type="button" data-request-id="${escAdmin(r.id)}" data-status="rejected" style="background:#a93226">Reject</button>`:''}</div>`).join('');
- box.querySelectorAll('button[data-request-id]').forEach(btn=>btn.addEventListener('click',async()=>{btn.disabled=true;const {error}=await srpcClient.from('membership_requests').update({status:btn.dataset.status}).eq('id',btn.dataset.requestId);if(error){adminMsg('Update failed: '+error.message);btn.disabled=false;}else{adminMsg('Request marked '+btn.dataset.status+'.',true);loadAdminRequests();}}));
+ box.querySelectorAll('button[data-request-id]').forEach(btn =>
+  btn.addEventListener('click', async () => {
+    const requestedStatus = btn.dataset.status;
+    const requestId = btn.dataset.requestId;
+
+    if (!['approved', 'rejected'].includes(requestedStatus)) {
+      adminMsg('Invalid request status.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to ${requestedStatus} this request?`)) {
+      return;
+    }
+
+    btn.disabled = true;
+    adminMsg('Updating request...', true);
+
+    try {
+      const { data, error } = await srpcClient.rpc(
+        'srpc_admin_update_membership_request',
+        {
+          request_id: Number(requestId),
+          new_status: requestedStatus
+        }
+      );
+
+      if (error) throw error;
+      if (!data || data.success !== true) {
+        throw new Error('Database did not confirm the update.');
+      }
+
+      adminMsg(`Request ${requestedStatus} successfully.`, true);
+      await loadAdminRequests();
+    } catch (err) {
+      console.error('Membership update failed:', err);
+      adminMsg('Update failed: ' + (err?.message || String(err)));
+      btn.disabled = false;
+    }
+  })
+);
 }
 document.getElementById('admin-login-form').addEventListener('submit',async e=>{e.preventDefault();adminMsg('Signing in…',true);const {data,error}=await srpcClient.auth.signInWithPassword({email:document.getElementById('admin-email').value.trim(),password:document.getElementById('admin-password').value});if(error){adminMsg(error.message);return;}const {data:role,error:roleError}=await srpcClient.rpc('srpc_my_admin_role');if(roleError||!role){await srpcClient.auth.signOut();adminMsg('This account is not assigned an admin role.');return;}adminMsg('Admin login successful ('+role+').',true);document.getElementById('admin-dashboard').style.display='block';document.getElementById('admin-logout').style.display='inline-block';loadAdminRequests();});
 document.getElementById('admin-logout').addEventListener('click',async()=>{await srpcClient.auth.signOut();document.getElementById('admin-dashboard').style.display='none';document.getElementById('admin-logout').style.display='none';adminMsg('Logged out.',true);});
