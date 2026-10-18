@@ -88,8 +88,8 @@
 <section id="club-details" class="auth-wrap" style="grid-template-columns:1fr;margin-top:18px"><article class="auth-card"><h3>About S.R.P.C.</h3><p>Shariatpur Racing Pigeon Club brings racing pigeon enthusiasts together to promote responsible pigeon racing, friendship and fair competition.</p><p class="small-note">Club information and official contact details can be updated by the club administrator.</p></article></section>
 <section id="ranking" class="auth-wrap" style="grid-template-columns:1fr;margin-top:18px"><article class="auth-card"><h3>Season Ranking</h3><p class="small-note">Season rankings will appear here when verified race results are connected to the database.</p></article></section>
 <section id="members" class="auth-wrap" style="grid-template-columns:1fr;margin-top:18px"><article class="auth-card"><h3>Club Members</h3><p class="small-note">Approved member listings will appear here after secure database policies are configured.</p></article></section>
-<section id="registration" class="auth-wrap" style="grid-template-columns:1fr;gap:18px"><article class="auth-card"><h3>Join SRPC — Membership Request</h3><form id="signup-form"><input id="signup-name" type="text" placeholder="Full name" required maxlength="100"><input id="signup-phone" type="tel" placeholder="Phone number" required maxlength="30"><input id="signup-email" type="email" placeholder="Email address (optional)" autocomplete="email"><input id="signup-password" type="password" placeholder="Create password (minimum 8 characters)" required minlength="8" autocomplete="new-password"><button type="submit">Register</button></form><div id="signup-message" class="auth-message" role="status"></div><p class="small-note">Submit your details to request membership. Your request must be reviewed by the club admin.</p></article>
-<article class="auth-card" id="login"><h3>Member Login</h3><form id="login-form"><input id="login-phone" type="tel" placeholder="Phone number" required autocomplete="tel"><input id="login-password" type="password" placeholder="Password" required autocomplete="current-password"><button type="submit">Login</button><button id="logout-button" type="button" style="display:none;margin-left:8px;background:#53677b">Log out</button></form><div id="login-message" class="auth-message" role="status"></div></article></section>
+<section id="registration" class="auth-wrap" style="grid-template-columns:1fr;gap:18px"><article class="auth-card"><h3>Join SRPC — Membership Request</h3><form id="signup-form"><input id="signup-name" type="text" placeholder="Full name" required maxlength="100"><input id="signup-phone" type="tel" placeholder="Phone number (include country code, e.g. +880...)" required maxlength="30" autocomplete="tel"><input id="signup-email" type="email" placeholder="Email address (optional)" autocomplete="email"><input id="signup-password" type="password" placeholder="Create password (minimum 8 characters)" required minlength="8" autocomplete="new-password"><button type="submit">Register</button></form><div id="signup-message" class="auth-message" role="status"></div><p class="small-note">Submit your details to request membership. Your request must be reviewed by the club admin.</p></article>
+<article class="auth-card" id="login"><h3>Member Login</h3><form id="login-form"><input id="login-phone" type="tel" placeholder="Registered phone number (with country code)" required autocomplete="tel"><input id="login-password" type="password" placeholder="Password" required autocomplete="current-password"><button type="submit">Login</button><button id="logout-button" type="button" style="display:none;margin-left:8px;background:#53677b">Log out</button></form><div id="login-message" class="auth-message" role="status"></div></article></section>
 </div><section id="admin-panel" class="auth-wrap" style="grid-template-columns:1fr;margin-top:18px;display:none"><article class="auth-card"><h3>SRPC Admin Panel</h3><p class="small-note">Sign in with your authorized admin account. Admin access is controlled securely by Supabase database roles.</p><form id="admin-login-form"><input id="admin-email" type="email" placeholder="Admin email" required autocomplete="username"><input id="admin-password" type="password" placeholder="Password" required autocomplete="current-password"><button type="submit">Admin Login</button><button id="admin-logout" type="button" style="display:none;background:#53677b;margin-left:8px">Log out</button></form><div id="admin-message" class="auth-message" role="status"></div></article><article class="auth-card" id="admin-dashboard" style="display:none"><h3>Membership Requests</h3><button id="refresh-requests" type="button">Refresh Requests</button><div id="admin-requests" style="margin-top:12px;overflow-wrap:anywhere">Sign in to view requests.</div><div id="admin-role-tools" style="display:none;margin-top:20px;border-top:1px solid var(--line);padding-top:16px"><h3>Manage Assistant Admins</h3><p class="small-note">Paste the assistant's Supabase Auth User UID (available in Supabase → Authentication → Users). Only the Main Admin can change admin roles.</p><input id="assistant-uid" placeholder="Assistant admin User UID"><select id="assistant-role" style="width:100%;padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:6px"><option value="assistant_admin">Appoint Assistant Admin</option><option value="member">Remove Admin Access</option></select><button id="save-assistant-role" type="button">Save Role</button><div id="role-message" class="auth-message"></div></div></article></section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -117,8 +117,14 @@ document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{
     dashboardParts.forEach(el=>{if(el)el.style.display='none'});
     if(targetId==='login'){
       const reg=document.getElementById('registration');
-      if(reg){reg.style.display='grid';reg.scrollIntoView({behavior:'smooth',block:'start'});}
-      if(login)login.style.display='block';
+      if(reg){
+        reg.style.display='grid';
+        reg.style.gridTemplateColumns='1fr';
+        reg.scrollIntoView({behavior:'smooth',block:'start'});
+      }
+      // Both forms live in the same section: registration first, phone/password login below.
+      const loginCard=document.getElementById('login');
+      if(loginCard){loginCard.style.display='block';loginCard.style.marginTop='18px';}
     } else {
       const el=document.getElementById(targetId);
       if(el){el.style.display=targetId==='past-race-records'?'block':'grid';el.scrollIntoView({behavior:'smooth',block:'start'});}
@@ -229,11 +235,13 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
   if (password.length < 8) { showMsg('signup-message', 'Password must be at least 8 characters.'); return; }
   if (!phone) { showMsg('signup-message', 'Enter your phone number.'); return; }
   try {
-    // Supabase Phone Auth must be enabled. Passwords are handled only by Supabase Auth.
+    // No OTP: use a deterministic internal email alias for phone+password login.
+    // Supabase Auth email confirmations must be disabled for this project.
+    const authEmail = phone.replace(/\D/g, '') + '@members.srpc-login.invalid';
     const { data: authData, error: authError } = await srpcClient.auth.signUp({
-      phone,
+      email: authEmail,
       password,
-      options: { data: { full_name, email } }
+      options: { data: { full_name, phone, contact_email: email } }
     });
     if (authError) throw authError;
     const user = authData?.user;
@@ -249,11 +257,11 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
       document.getElementById('logout-button').style.display = 'inline-block';
       await startMemberApprovalCheck(user.id);
     } else {
-      showMsg('signup-message', 'Request submitted. Supabase requires phone verification before sign-in; verify your phone, then log in with your phone number and password.', true);
+      showMsg('signup-message', 'Account created but no active session was returned. In Supabase Auth settings, turn OFF email confirmations, then try again.', true);
     }
   } catch (err) {
     console.error('Member registration failed:', err);
-    showMsg('signup-message', 'Registration failed: ' + (err?.message || 'Check Supabase Phone Auth settings and membership_requests user_id column/policies.'));
+    showMsg('signup-message', 'Registration failed: ' + (err?.message || 'Check Supabase email confirmation settings and membership_requests user_id column/policies.'));
   }
 });
 document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -262,7 +270,9 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   const phone = document.getElementById('login-phone').value.trim();
   const password = document.getElementById('login-password').value;
   try {
-    const { data, error } = await srpcClient.auth.signInWithPassword({ phone, password });
+    // Match the internal email alias used when the member registered.
+    const authEmail = phone.replace(/\D/g, '') + '@members.srpc-login.invalid';
+    const { data, error } = await srpcClient.auth.signInWithPassword({ email: authEmail, password });
     if (error) throw error;
     const user = data.user;
     const { data: request, error: requestError } = await srpcClient
@@ -285,7 +295,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     }
   } catch (err) {
     console.error('Member login failed:', err);
-    showMsg('login-message', err?.message || 'Login failed. Check your phone number and password, and confirm Supabase Phone Auth is enabled.');
+    showMsg('login-message', err?.message || 'Login failed. Check your phone number and password, and confirm Supabase email confirmations are disabled.');
   }
 });
 document.getElementById('logout-button').addEventListener('click',async()=>{const {error}=await srpcClient.auth.signOut();if(error){showMsg('login-message',error.message);return;}showMsg('login-message','Logged out successfully.',true);document.getElementById('logout-button').style.display='none';});
