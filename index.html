@@ -97,6 +97,13 @@
 const SUPABASE_URL = 'https://mwgmxhwdlqexqytszaxu.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ob_nkcCMRW_HLyM3qPkpJg_i7KOQpT6';
 const srpcClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Normalize Bangladeshi phone numbers so 017..., +88017..., and 0088017... map to the same login alias.
+function normalizeMemberPhone(value) {
+  let digits = String(value || '').replace(/\D/g, '');
+  if (digits.startsWith('00880')) digits = digits.slice(2);
+  if (digits.startsWith('0') && digits.length === 11) digits = '88' + digits;
+  return digits;
+}
 document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{
   document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
   a.classList.add('active');
@@ -237,7 +244,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
   try {
     // No OTP: use a deterministic internal email alias for phone+password login.
     // Supabase Auth email confirmations must be disabled for this project.
-    const authEmail = phone.replace(/\D/g, '') + '@members.srpc-login.invalid';
+    const authEmail = normalizeMemberPhone(phone) + '@members.srpc-login.invalid';
     const { data: authData, error: authError } = await srpcClient.auth.signUp({
       email: authEmail,
       password,
@@ -271,7 +278,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   const password = document.getElementById('login-password').value;
   try {
     // Match the internal email alias used when the member registered.
-    const authEmail = phone.replace(/\D/g, '') + '@members.srpc-login.invalid';
+    const authEmail = normalizeMemberPhone(phone) + '@members.srpc-login.invalid';
     const { data, error } = await srpcClient.auth.signInWithPassword({ email: authEmail, password });
     if (error) throw error;
     const user = data.user;
