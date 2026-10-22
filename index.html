@@ -160,7 +160,7 @@ async function showSideMemberProfile(userId, requestRow) {
   if (!user || user.id !== userId) return;
   const { data: request, error } = await srpcClient
     .from('membership_requests')
-    .select('id,member_code,full_name,phone,status')
+    .select('id,user_id,full_name,phone,status,created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(1).maybeSingle();
@@ -168,7 +168,13 @@ async function showSideMemberProfile(userId, requestRow) {
   document.getElementById('join-srpc-side').style.display = 'none';
   document.getElementById('side-member-profile').style.display = 'flex';
   document.getElementById('side-member-name').textContent = request.full_name || user.user_metadata?.full_name || 'SRPC Member';
-  document.getElementById('side-member-id').textContent = 'Member ID: ' + (request.member_code || ('SRPC-' + String(request.id).padStart(3, '0')));
+  const { data: approvedMembers } = await srpcClient
+    .from('membership_requests')
+    .select('id,user_id,created_at')
+    .eq('status', 'approved')
+    .order('created_at', { ascending: true });
+  const memberIndex = (approvedMembers || []).findIndex(row => row.id === request.id);
+  document.getElementById('side-member-id').textContent = 'Member ID: SRPC ' + String(memberIndex >= 0 ? memberIndex + 1 : 1).padStart(3, '0');
   document.getElementById('side-member-phone').textContent = 'Contact: ' + (request.phone || user.phone || '—');
   const avatar = user.user_metadata?.avatar_url;
   if (avatar) {
@@ -213,7 +219,7 @@ async function startMemberApprovalCheck(userId) {
     try {
       const { data, error } = await srpcClient
         .from('membership_requests')
-        .select('id,member_code,full_name,phone,status')
+        .select('id,user_id,full_name,phone,status,created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -285,7 +291,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     if (error) throw error;
     const user = data.user;
     const { data: request, error: requestError } = await srpcClient
-      .from('membership_requests').select('id,member_code,full_name,phone,status').eq('user_id', user.id)
+      .from('membership_requests').select('id,user_id,full_name,phone,status,created_at').eq('user_id', user.id)
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (requestError) throw requestError;
     if (!request) {
@@ -314,7 +320,7 @@ document.getElementById('logout-button').addEventListener('click',async()=>{cons
     const { data } = await srpcClient.auth.getUser();
     if (!data?.user) return;
     const { data: request } = await srpcClient.from('membership_requests')
-      .select('id,member_code,full_name,phone,status').eq('user_id', data.user.id)
+      .select('id,user_id,full_name,phone,status,created_at').eq('user_id', data.user.id)
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (request?.status === 'approved') await showSideMemberProfile(data.user.id, request);
   } catch (e) { console.error('Could not restore member profile:', e); }
