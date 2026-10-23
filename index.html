@@ -490,18 +490,18 @@ async function loadSRPCMembers(){
   const out=document.getElementById('srpc-members-list'), msg=document.getElementById('srpc-members-message'), count=document.getElementById('approved-member-count');
   if(!out)return; out.innerHTML='<p class="small-note">Loading approved members…</p>'; if(msg)msg.textContent='';
   try{
-    let {data,error}=await srpcClient.from('membership_requests').select('id,user_id,full_name,phone,status,created_at,avatar_url').eq('status','approved').order('created_at',{ascending:true});
-    if(error && /avatar_url|column/i.test(error.message||'')){
-      const retry=await srpcClient.from('membership_requests').select('id,user_id,full_name,phone,status,created_at').eq('status','approved').order('created_at',{ascending:true});
-      data=retry.data; error=retry.error;
+    let result=await srpcClient.from('membership_requests').select('id,user_id,full_name,phone,status,created_at,avatar_url').eq('status','approved').order('created_at',{ascending:true});
+    if(result.error && /avatar_url|column/i.test(result.error.message||'')){
+      result=await srpcClient.from('membership_requests').select('id,user_id,full_name,phone,status,created_at').eq('status','approved').order('created_at',{ascending:true});
     }
-    if(error)throw error;
-    const unique=[]; const seen=new Set();
-    for(const m of (data||[])){const key=m.user_id||m.id;if(!seen.has(key)){seen.add(key);unique.push(m)}}
-    if(count)count.textContent=String(unique.length);
-    if(!unique.length){out.innerHTML='<p class="small-note">No approved members found yet.</p>';return;}
-    out.innerHTML=unique.map((m,i)=>{const name=escMember(m.full_name||'SRPC Member');const memberId='SRPC '+String(i+1).padStart(3,'0');const phone=escMember(m.phone||'—');const photo=m.avatar_url?'<img loading="lazy" src="'+escMember(m.avatar_url)+'" alt="'+name+' profile photo">':'<div class="srpc-member-avatar" aria-label="No profile photo">♟</div>';return '<article class="srpc-member-card">'+photo+'<strong>'+name+'</strong><small>'+memberId+'</small><small>Phone: '+phone+'</small></article>'}).join('');
-  }catch(e){out.innerHTML='<p class="small-note">Could not load the member directory. Check the public SELECT policy on membership_requests. '+escMember(e.message||'')+'</p>';if(msg)msg.textContent='Member list could not be loaded.';}
+    if(result.error)throw result.error;
+    // Do not require a logged-in member: this query is intentionally public, but RLS
+    // must allow anon SELECT for rows whose status is approved.
+    const members=result.data||[];
+    if(count)count.textContent=String(members.length);
+    if(!members.length){out.innerHTML='<p class="small-note">No approved members are visible. If you know approved members exist, run the public SELECT policy SQL supplied with this website update in Supabase SQL Editor.</p>';return;}
+    out.innerHTML=members.map((m,i)=>{const name=escMember(m.full_name||'SRPC Member');const memberId='SRPC '+String(i+1).padStart(3,'0');const phone=escMember(m.phone||'—');const photo=m.avatar_url?'<img loading="lazy" src="'+escMember(m.avatar_url)+'" alt="'+name+' profile photo">':'<div class="srpc-member-avatar" aria-label="No profile photo">♟</div>';return '<article class="srpc-member-card">'+photo+'<strong>'+name+'</strong><small>'+memberId+'</small><small>Phone: '+phone+'</small></article>'}).join('');
+  }catch(e){out.innerHTML='<p class="small-note">Member records could not be loaded: '+escMember(e.message||'')+'. The public SELECT policy for approved membership rows may be missing in Supabase.</p>';if(msg)msg.textContent='Member list could not be loaded.';}
 }
 // Update the live count on page load; clicking the card opens the full directory.
 document.addEventListener('DOMContentLoaded',loadSRPCMembers);
