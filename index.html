@@ -38,6 +38,27 @@
 <style>
 .join-srpc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:18px;padding:12px 24px;border:0;border-radius:8px;background:#075db3;color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px #001b3a55}.join-srpc-btn:hover{background:#064a90}.hero>div{display:flex;flex-direction:column;align-items:flex-start}.hero .join-srpc-btn{align-self:flex-start}@media(max-width:600px){.join-srpc-btn{font-size:14px;padding:11px 20px}}
 </style>
+
+<style id="last-race-fit-screen-only">
+/* Only the homepage Last Race Results table is adjusted; all other site content stays unchanged. */
+#race-results .cardbody{overflow-x:hidden!important;min-width:0}
+#race-results table.results{width:100%!important;max-width:100%;table-layout:fixed;border-collapse:collapse}
+#race-results table.results th,#race-results table.results td{white-space:normal!important;overflow-wrap:anywhere;word-break:normal;padding:7px 4px}
+#race-results table.results th{font-size:10px;line-height:1.15}
+#race-results table.results td{font-size:10px;line-height:1.2}
+#race-results table.results th:nth-child(1),#race-results table.results td:nth-child(1){width:12%}
+#race-results table.results th:nth-child(2),#race-results table.results td:nth-child(2){width:16%}
+#race-results table.results th:nth-child(3),#race-results table.results td:nth-child(3){width:10%}
+#race-results table.results th:nth-child(4),#race-results table.results td:nth-child(4){width:20%}
+#race-results table.results th:nth-child(5),#race-results table.results td:nth-child(5){width:14%}
+#race-results table.results th:nth-child(6),#race-results table.results td:nth-child(6){width:14%}
+#race-results table.results th:nth-child(7),#race-results table.results td:nth-child(7){width:14%}
+@media(max-width:760px){
+ #race-results .cardbody{padding-left:8px;padding-right:8px}
+ #race-results table.results th,#race-results table.results td{padding:5px 2px;font-size:8px;line-height:1.15}
+ #race-results table.results th{font-size:8px}
+}
+</style>
 </head>
 <body>
 <aside class="sidebar" id="sidebar"><div class="side-member-area" id="side-member-area">
@@ -60,7 +81,7 @@
 <div class="content"><section class="summary"><div class="summary-card" id="registered-members-card" role="button" tabindex="0" style="cursor:pointer" title="View approved SRPC members" onclick="openSRPCMembers()"><span class="symbol">🕊️</span><div><b>Registered Pigeon Club Members</b><strong id="approved-member-count">—</strong></div></div><div class="summary-card"><span class="symbol">🏆</span><div><b>Races Organized</b><strong>15</strong></div></div><div class="summary-card"><span class="symbol">🏅</span><div><b>Rest Champions</b><strong>32</strong></div></div></section>
 <section class="cards"><article class="card" id="pigeon-search"><div class="cardhead"><span>⌕</span>Pigeon Database Search</div><div class="cardbody"><form class="searchform" id="pigeon-search-form"><input id="ring-search-input" placeholder="Enter Ring Number (e.g. 23-550)" aria-label="Ring number" required><button type="submit">Search</button></form><div id="ring-search-message" class="small-note" role="status" style="margin-top:12px">Enter a ring number to view all recorded races for that pigeon.</div><div id="ring-search-results" style="margin-top:14px;overflow-x:auto"></div><div class="pigeon-info"><img src="https://images.unsplash.com/photo-1501706362039-c6e13d3c7e31?auto=format&fit=crop&w=500&q=80" alt="Racing pigeon"><p>Search by ring number to see how many races the pigeon entered and its position in each race.</p></div></div></article>
 <article class="card" id="race-schedule"><div class="cardhead"><span>▦</span>Upcoming Races &amp; Club Event</div><div class="cardbody"><div class="event"><div class="date">25<small>Oct</small></div><div><b>Training Race</b><p>Shariatpur - 120 km</p></div><span class="badge">Upcoming</span></div><div class="event"><div class="date">08<small>Nov</small></div><div><b>Friendly Race</b><p>Shariatpur - 150 km</p></div><span class="badge">Upcoming</span></div><div class="event"><div class="date">22<small>Nov</small></div><div><b>Main Race</b><p>Shariatpur - 250 km</p></div><span class="badge">Upcoming</span></div><a class="viewall" href="#race-schedule">View All Events →</a></div></article>
-<article class="card" id="race-results"><div class="cardhead"><span>🏆</span>Last Race Results</div><div class="cardbody" style="overflow-x:auto"><table class="results"><thead><tr><th>Rank</th><th>Ring No</th><th>Owner</th><th>Distance</th><th>Time</th></tr></thead><tbody><tr><td><span class="rankmedal">🥇</span> 1</td><td>S-24321</td><td>Md. Rahim</td><td>180 km</td><td>1:42:18</td></tr><tr><td><span class="rankmedal">🥈</span> 2</td><td>S-17845</td><td>Abdul Karim</td><td>180 km</td><td>1:43:02</td></tr><tr><td><span class="rankmedal">🥉</span> 3</td><td>S-15678</td><td>Rasel Ahmed</td><td>180 km</td><td>1:44:36</td></tr><tr><td>4</td><td>S-26789</td><td>Farid Hossain</td><td>180 km</td><td>1:46:12</td></tr><tr><td>5</td><td>S-24567</td><td>Sajjad Mia</td><td>180 km</td><td>1:48:30</td></tr></tbody></table><a class="viewall" href="#race-results">View All Results →</a></div></article></section>
+<article class="card" id="race-results"><div class="cardhead"><span>🏆</span>Last Race Results</div><div class="cardbody" style="overflow-x:auto"><div style="padding:0 0 12px;color:#52677e;font-size:13px;line-height:1.6"><strong>Banglabandha Race — 419–436 km</strong><br>Race date: 23 January 2026 · Total pigeons: 69 · Registered pigeons: 49</div><div style="padding:0 0 12px"><button type="button" class="archive-pdf-view" data-pdf="banglabandha2025">View PDF</button></div><table class="results"><thead><tr><th>Position</th><th>Loft</th><th>Club Tag</th><th>Race Area</th><th>Date (D-M-Y)</th><th>Distance</th><th>Velocity</th></tr></thead><tbody><tr><td><strong>1/69</strong></td><td>Arafat Loft</td><td>SRPC</td><td>BANGLABANDHA 419-436 KM</td><td>23-01-2026</td><td>421.17 km</td><td>1784.684</td></tr><tr><td><strong>2/69</strong></td><td>Arafat Loft</td><td>SRPC</td><td>BANGLABANDHA 419-436 KM</td><td>23-01-2026</td><td>421.17 km</td><td>1784.338</td></tr><tr><td><strong>3/69</strong></td><td>Arafat Loft</td><td>SRPC</td><td>BANGLABANDHA 419-436 KM</td><td>23-01-2026</td><td>421.17 km</td><td>1783.762</td></tr><tr><td><strong>4/69</strong></td><td>Arafat Loft</td><td>SRPC</td><td>BANGLABANDHA 419-436 KM</td><td>23-01-2026</td><td>421.17 km</td><td>1783.187</td></tr><tr><td><strong>5/69</strong></td><td>Arafat Loft</td><td>SRPC</td><td>BANGLABANDHA 419-436 KM</td><td>23-01-2026</td><td>421.17 km</td><td>1741.498</td></tr></tbody></table><a class="viewall" href="#past-race-records">View Full Race PDF →</a></div></article></section>
 <div class="footerbanner" id="contact"><strong>“Racing Pigeons<br>More Than a Hobby,<br>It’s a Lifestyle”</strong><div class="footerlocation">♦ &nbsp; Shariatpur<br>&nbsp;&nbsp;&nbsp;&nbsp; Bangladesh<br><br><i>Together We Fly Higher</i></div></div>
 
 <section id="past-race-records" class="archive-wrap">
@@ -482,24 +503,27 @@ if(ringForm){
     const out=document.getElementById('ring-search-results');
     msg.textContent='Searching race records…'; out.innerHTML='';
     try{
+      // Search all accessible race rows by normalized ring number so year prefixes
+      // such as '21 1249', '22 1249' or '25 1249C+' match the same pigeon '1249'.
+      // Keep ring numbers as strings so leading zeroes remain intact.
       const {data,error}=await srpcClient.from('pigeon_race_records')
         .select('ring_number,position,loft_name,club_tag,race_area,race_date,distance,velocity,total_pigeons')
-        .eq('ring_number',ring).order('race_date',{ascending:false});
+        .order('race_date',{ascending:false}).limit(1000);
       if(error){
-        // Still allow these embedded PDF records to be searched if the remote table is unavailable.
-        const localOnly=SRPC_BANGLABANDHA_RECORDS.filter(r=>r.ring_number===ring);
+        // Still allow the embedded Banglabandha PDF records to be searched if the remote table is unavailable.
+        const localOnly=SRPC_BANGLABANDHA_RECORDS.filter(r=>normalizeSrpcRingNumber(r.ring_number)===ring);
         if(!localOnly.length){msg.textContent='';out.innerHTML='<div class="ring-error">The race database is not ready yet, or its access policy is blocking this search. Details: '+escapeRingHtml(error.message)+'</div>';return;}
         renderRingRecords(localOnly,ring,msg,out); return;
       }
-      const combined=[...(data||[])];
-      for(const local of SRPC_BANGLABANDHA_RECORDS.filter(r=>r.ring_number===ring)){
+      const combined=(data||[]).filter(r=>normalizeSrpcRingNumber(r.ring_number)===ring);
+      for(const local of SRPC_BANGLABANDHA_RECORDS.filter(r=>normalizeSrpcRingNumber(r.ring_number)===ring)){
         if(!combined.some(r=>String(r.ring_number)===local.ring_number && String(r.race_date||'').slice(0,10)===local.race_date && String(r.race_area||'').toLowerCase().includes('banglabandha'))){combined.push(local);}
       }
       combined.sort((a,b)=>String(b.race_date||'').localeCompare(String(a.race_date||'')));
       if(!combined.length){msg.textContent='';out.innerHTML='<div class="ring-empty">No race records found for ring number <strong>'+escapeRingHtml(ring)+'</strong>. Check the number or try again after records are added.</div>';return;}
       renderRingRecords(combined,ring,msg,out);
     }catch(err){
-      const localOnly=SRPC_BANGLABANDHA_RECORDS.filter(r=>r.ring_number===ring);
+      const localOnly=SRPC_BANGLABANDHA_RECORDS.filter(r=>normalizeSrpcRingNumber(r.ring_number)===ring);
       if(localOnly.length){renderRingRecords(localOnly,ring,msg,out);return;}
       msg.textContent='';out.innerHTML='<div class="ring-error">Could not complete the search. Check your internet connection and try again.</div>';
     }
