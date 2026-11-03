@@ -119,7 +119,7 @@
 <script>
 const SUPABASE_URL = 'https://mwgmxhwdlqexqytszaxu.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Ob_nkcCMRW_HLyM3qPkpJg_i7KOQpT6';
-const srpcClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const srpcClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
 // Keep the admin session separate so admin login/logout never replaces the member session.
 const srpcAdminClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { storageKey: 'srpc-admin-auth-v1', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
 // Normalize Bangladeshi phone numbers so 017..., +88017..., and 0088017... map to the same login alias.
@@ -198,7 +198,7 @@ async function showSideMemberProfile(userId, requestRow) {
     .order('created_at', { ascending: true });
   const memberIndex = (approvedMembers || []).findIndex(row => row.id === request.id);
   document.getElementById('side-member-id').textContent = 'Member ID: SRPC ' + String(memberIndex >= 0 ? memberIndex + 1 : 1).padStart(3, '0');
-  document.getElementById('side-member-phone').textContent = 'Contact: ' + (request.phone || request.phone_number || user.phone || '—');
+  document.getElementById('side-member-phone').textContent = 'Contact: ' + (request.phone_number || request.phone || user.phone || '—');
   const avatar = user.user_metadata?.avatar_url;
   if (avatar) {
     const img = document.getElementById('side-member-photo');
@@ -279,18 +279,33 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     // No OTP: use a deterministic internal email alias for phone+password login.
     // Supabase Auth email confirmations must be disabled for this project.
     const authEmail = normalizeMemberPhone(phone) + '@members.srpc-login.invalid';
-    const { data: authData, error: authError } = await srpcClient.auth.signUp({
+    let { data: authData, error: authError } = await srpcClient.auth.signUp({
       email: authEmail,
       password,
       options: { data: { full_name, phone, contact_email: email } }
     });
+    // A previous attempt may have created the Auth user but failed before
+    // inserting membership_requests. Reuse that account when the same password is supplied.
+    if (authError && /already registered|user already exists|email.*exists/i.test(authError.message || '')) {
+      const retry = await srpcClient.auth.signInWithPassword({ email: authEmail, password });
+      if (retry.error) throw new Error('This phone already has an Auth account. Sign in with its original password, or contact the admin if you no longer know it. ' + retry.error.message);
+      authData = retry.data;
+      authError = null;
+    }
     if (authError) throw authError;
-    const user = authData?.user;
-    if (!user) throw new Error('Supabase did not create a member account.');
+    const user = authData?.user || authData?.session?.user;
+    if (!user) throw new Error('Supabase did not create or restore a member account.');
+    // Match the actual membership_requests schema shown in Supabase:
+    // auth_uid (UUID), full_name, phone_number, phone, email, status.
     const { error: requestError } = await srpcClient.from('membership_requests').insert([{
-      auth_uid: user.id, full_name, phone, phone_number: phone, email, status: 'pending'
+      auth_uid: user.id,
+      full_name,
+      phone_number: phone,
+      phone,
+      email,
+      status: 'pending'
     }]);
-    if (requestError) throw requestError;
+    if (requestError) throw new Error('Auth account created, but membership request could not be saved: ' + requestError.message + '. Check the membership_requests INSERT RLS policy.');
     document.getElementById('signup-form').reset();
     if (authData.session) {
       showMsg('signup-message', 'Registration submitted. You are signed in; member access will activate after admin approval.', true);
@@ -302,7 +317,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     }
   } catch (err) {
     console.error('Member registration failed:', err);
-    showMsg('signup-message', 'Registration failed: ' + (err?.message || 'Check Supabase email confirmation settings and membership_requests auth_uid column/RLS insert policy.'));
+    showMsg('signup-message', 'Registration failed: ' + (err?.message || 'Check Supabase email confirmation settings and membership_requests auth_uid column/INSERT RLS policy.'));
   }
 });
 document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -348,7 +363,12 @@ document.getElementById('logout-button').addEventListener('click',async()=>{cons
     const { data: request } = await srpcClient.from('membership_requests')
       .select('id,auth_uid,full_name,phone,phone_number,status,created_at').eq('auth_uid', data.user.id)
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
-    if (request?.status === 'approved') await showSideMemberProfile(data.user.id, request);
+    if (request) {
+      document.getElementById('logout-button').style.display = 'inline-block';
+      if (request.status === 'approved') await showSideMemberProfile(data.user.id, request);
+      else if (request.status === 'pending') await startMemberApprovalCheck(data.user.id);
+      showMsg('login-message', request.status === 'approved' ? 'Member session restored.' : 'Member session restored. Membership is ' + request.status + '.', true);
+    }
   } catch (e) { console.error('Could not restore member profile:', e); }
 })();
 // Admin tools: database permissions are enforced by Supabase RLS/RPC, not by this page alone.
